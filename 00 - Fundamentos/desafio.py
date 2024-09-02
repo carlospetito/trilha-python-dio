@@ -1,76 +1,130 @@
-menu = """
-[d] Depositar
-[s] Sacar
-[e] Extrato
-[q] Sair
-
-=> """
-
-saldo = 0
 limite = 500
-extrato = ""
-numero_saques = 0
-LIMITE_SAQUES = 3
+limite_saque = 3
+usuario = {}
+numero_conta = 0
 
-def exibir_menu():
-    print(menu)
+#cores
+VERMELHO = '\033[91m'
+VERDE = '\033[92m'
+RESET = '\033[0m'  # Reseta a cor para a padrão do terminal
 
-def realizar_deposito(valor):
-    global saldo, extrato
+def menu():
+    menu_texto = """
+    ============Menu============
+    [d] Depositar
+    [s] Sacar
+    [e] Extrato
+    [u] Criar Usuário
+    [c] Criar Conta
+    [q] Sair
+    ============================
+    => """
+    return input(menu_texto).lower()
+
+def deposito(saldo, extrato):
+    valor = float(input("Digite o valor do deposito: "))
     if valor > 0:
+        extrato += f"Deposito: R$ {VERDE}{valor:>10.2f}{RESET}\n"
         saldo += valor
-        extrato += f"Depósito: R$ {valor:.2f}\n"
-        print(f"Depósito de R$ {valor:.2f} realizado com sucesso!")
+        print(f"{VERDE}Depósito efeituado com sucesso!{RESET}")
     else:
-        print("Operação falhou! O valor informado é inválido.")
+        print(f"{VERMELHO}Operação falou! Valor inválido para depósito{RESET}")
+    return saldo, extrato
 
-def realizar_saque(valor):
-    global saldo, extrato, numero_saques
-    excedeu_saldo = valor > saldo
-    excedeu_limite = valor > limite
-    excedeu_saques = numero_saques >= LIMITE_SAQUES
+def saque(saldo, extrato, numero_saque):
+    valor = float(input("Digite o valor do saque: "))
 
-    if excedeu_saldo:
-        print("Operação falhou! Você não tem saldo suficiente.")
-    elif excedeu_limite:
-        print("Operação falhou! O valor do saque excede o limite.")
-    elif excedeu_saques:
-        print("Operação falhou! Número máximo de saques excedido.")
+    if valor > saldo:
+        print(f"{VERMELHO}Operação falhou! Saldo insuficiente para saque{RESET}.")
+    elif valor > limite:
+        print(f"{VERMELHO}Operação falhou! Excedeu o limite de saque{RESET}")
+    elif numero_saque > limite_saque:
+        print(f"{VERMELHO}Operação falhou! Limite de saques do dia excedido.{RESET}")
     elif valor > 0:
+        numero_saque += 1
+        extrato += f"Saque:    R$ {VERMELHO}{valor:>10.2f}{RESET}\n"
         saldo -= valor
-        extrato += f"Saque: R$ {valor:.2f}\n"
-        numero_saques += 1
-        print(f"Saque de R$ {valor:.2f} realizado com sucesso!")
-    else:
-        print("Operação falhou! O valor informado é inválido.")
+        print(f"{VERDE}Saque efeituado com sucesso!{RESET}")
+    return saldo, extrato, numero_saque
 
-def exibir_extrato():
-    print("\n================ EXTRATO ================")
-    if not extrato:
-        print("Não foram realizadas movimentações.")
+def exibir_extrato(extrato, saldo):
+    if extrato:
+        print(f"=======Saldo da Conta=======\n{saldo}\nSaldo:    R$ {extrato:>10.2f}\n============================")
     else:
-        print(extrato)
-    print(f"\nSaldo: R$ {saldo:.2f}")
-    print("==========================================")
+        print("Nenhuma movimentação registrada.")
+    
+def criar_usuario():
+    nome = str(input("Digite o seu nome: "))
+    nascimento = input("DIgite sua data de nascimento[dd/mm/aaa]: ")
+    cpf = input("DIgite o CPF: ")
+    endereco = input("Endereço[logradouro, numero - bairro - cidade/sigla estado]: ")
+    if cpf in usuario:
+        print(f"{VERMELHO}CPF já registrado. Usuário não adicionado{RESET}")
+    else:
+        usuario[cpf] ={
+            "nome": nome, 
+            "nascimento": nascimento, 
+            "endereco": endereco
+        }
+        print(f"{VERDE}Usuário adicionado com sucesso!{RESET}")
+        print(usuario)
+
+    return usuario
+
+def criar_conta(usuario):
+    global numero_conta
+    conta = {}
+    cpf = input("Digite o CFP do usuário: ")
+
+    if cpf not in usuario:
+        print(f"{VERMELHO}CPF não encontrado. Por favor adicione o usuário primeiro.{RESET}")
+    else:
+        numero_conta += 1
+        agencia = "0001"
+
+        chave_conta = f"{agencia}-{numero_conta}"
+
+        conta[chave_conta] = {
+            "cpf_usuario": cpf, 
+            "agencia": agencia, 
+            "numero_conta": numero_conta
+        }
+        print(f"{VERDE}Conta {chave_conta} criada e vincualda ao CPF {cpf}.{RESET}")
+    return conta
 
 def main():
+    saldo = 0.0
+    numero_saque = 0
+    extrato = ""
+    nome = ""
+    
     while True:
-        exibir_menu()
-        opcao = input().strip().lower()
+        opcao = menu()
 
         if opcao == "d":
-            valor = float(input("Informe o valor do depósito: "))
-            realizar_deposito(valor)
+            saldo, extrato = deposito(saldo, extrato)  
+
         elif opcao == "s":
-            valor = float(input("Informe o valor do saque: "))
-            realizar_saque(valor)
+            saldo, extrato, numero_saque = saque(saldo, extrato, numero_saque)
+
         elif opcao == "e":
-            exibir_extrato()
+            exibir_extrato(saldo, extrato)
+
+        elif opcao == "u":
+            nome = criar_usuario()
+
+        elif opcao == "c":
+            if nome:
+                criar_conta(usuario)
+            else:
+                print(f"{VERMELHO}Primeiro crie um usuário.{RESET}")
+
         elif opcao == "q":
-            print("Saindo...")
+            print("Tenha um ótimo dia!")
             break
         else:
-            print("Operação inválida, por favor selecione novamente a operação desejada.")
+            print(f"{VERMELHO}Opção invalida! Por favor, selecione uma das opções disponíveis no menu.{RESET}")
 
-if __name__ == "__main__":
-    main()
+
+
+main()
